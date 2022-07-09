@@ -3,10 +3,19 @@ defmodule Assinante do
 
   @assinantes %{prepago: "pre.txt", pospago: "pos.txt"}
 
-  def buscar(numero) do
-    prepago = read(:prepago) ++ read(:pospago)
-    Enum.find(prepago, &(&1.numero == numero))
+  def buscar(numero, key \\ :all)
+  def buscar(numero, _key = :all), do: do_buscar(listar(), numero)
+  def buscar(numero, _key = :prepago), do: do_buscar(listar_prepago(), numero)
+  def buscar(numero, _key = :pospago), do: do_buscar(listar_pospago(), numero)
+
+  defp do_buscar(lista, numero) do
+    Enum.find(lista, &(&1.numero == numero))
   end
+
+
+  def listar_prepago(), do: read(:prepago)
+  def listar_pospago(), do: read(:pospago)
+  def listar(), do: listar_prepago() ++ listar_pospago()
 
   def cadastrar(nome, numero, cpf, plano \\ :prepago) do
     case buscar(numero) do
@@ -28,9 +37,9 @@ defmodule Assinante do
   end
 
   def read(plano) do
-    with {:ok, assinantes} <- File.read(@assinantes[plano]) do
-      :erlang.binary_to_term(assinantes)
-    else
+    case File.read(@assinantes[plano]) do
+      {:ok, assinantes} ->
+        :erlang.binary_to_term(assinantes)
       _ -> []
     end
   end
