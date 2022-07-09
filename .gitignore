@@ -24,3 +24,7 @@ telefonia-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Data files
+pre.txt
+pos.txt
