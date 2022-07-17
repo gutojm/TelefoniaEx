@@ -5,7 +5,7 @@ defmodule Assinante do
   A função mais utilizada é `cadastrar/4`
   """
 
-  defstruct nome: nil, numero: nil, cpf: nil, plano: nil
+  defstruct nome: nil, numero: nil, cpf: nil, plano: nil, chamadas: []
 
   @assinantes %{prepago: "pre.txt", pospago: "pos.txt"}
 
@@ -37,7 +37,6 @@ defmodule Assinante do
     Enum.find(lista, &(&1.numero == numero))
   end
 
-
   def listar_prepago(), do: read(:prepago)
   def listar_pospago(), do: read(:pospago)
   def listar(), do: listar_prepago() ++ listar_pospago()
@@ -54,8 +53,7 @@ defmodule Assinante do
 
   ## Exemplo
 
-      iex> Assinante.cadastrar("Joao", "123123", "123123", :prepago)
-      {:ok, "Assinante Joao cadastrado com sucesso"}
+      iex> {:ok, _assinante} = Assinante.cadastrar("Joao", "123123", "123123", :prepago)
   """
 
   def cadastrar(nome, numero, cpf, :prepago), do: cadastrar(nome, numero, cpf, %Prepago{})
@@ -66,16 +64,34 @@ defmodule Assinante do
       nil ->
         assinante = %__MODULE__{nome: nome, numero: numero, cpf: cpf, plano: plano}
 
-        read(pega_plano(assinante)) ++ [assinante]
-        |> :erlang.term_to_binary()
-        |> write(pega_plano(assinante))
+        (read(pega_plano(assinante)) ++ [assinante])
+        |> write_file(pega_plano(assinante))
 
-        {:ok, "Assinante #{nome} cadastrado com sucesso"}
-      _assinante -> {:error, "Assinante com este numero já cadastrado"}
+        {:ok, assinante}
+
+      _assinante ->
+        {:error, "Assinante com este numero já cadastrado"}
     end
   end
 
-  defp pega_plano (assinante) do
+  def atualizar(numero, assinante) do
+    case deletar_item(numero) do
+      {:error, :not_found} ->
+        {:error, "Assinante não encontrado!"}
+
+      {:ok, assinante_antigo, lista} ->
+        case pega_plano(assinante) == pega_plano(assinante_antigo) do
+          true ->
+            (lista ++ [assinante])
+            |> write_file(pega_plano(assinante))
+
+          false ->
+            {:error, "Assinante nao pode alterar o plano"}
+        end
+    end
+  end
+
+  defp pega_plano(assinante) do
     case assinante.plano do
       %Prepago{} -> :prepago
       _ -> :pospago
@@ -90,20 +106,42 @@ defmodule Assinante do
     case File.read(@assinantes[plano]) do
       {:ok, assinantes} ->
         :erlang.binary_to_term(assinantes)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
   def deletar(numero) do
-    case buscar(numero) do
-      nil -> {:error, "Assinante não encontrado!"}
-      assinante ->
-        result = listar()
-        |> List.delete(assinante)
-        |> :erlang.term_to_binary()
-        |> write(assinante.plano)
+    case deletar_item(numero) do
+      {:error, :not_found} ->
+        {:error, "Assinante não encontrado!"}
 
-        {result, "Assinante #{assinante.nome} deletado!"}
+      {:ok, assinante, lista} ->
+        lista
+        |> write_file(pega_plano(assinante))
+
+        {:ok, "Assinante #{assinante.nome} deletado!"}
     end
+  end
+
+  def deletar_item(numero) do
+    case buscar(numero) do
+      nil ->
+        {:error, :not_found}
+
+      assinante ->
+        lista =
+          listar()
+          |> List.delete(assinante)
+
+        {:ok, assinante, lista}
+    end
+  end
+
+  def write_file(lista, plano) do
+    lista
+    |> :erlang.term_to_binary()
+    |> write(plano)
   end
 end

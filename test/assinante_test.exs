@@ -1,6 +1,5 @@
 defmodule AssinanteTest do
   use ExUnit.Case
-  doctest Assinante
 
   setup do
     File.rm("pre.txt")
@@ -14,12 +13,14 @@ defmodule AssinanteTest do
 
   describe "cadastrar/4" do
     test "criar uma conta prepago" do
-      assert Assinante.cadastrar("Guto", "123", "123", :prepago) == {:ok, "Assinante Guto cadastrado com sucesso"}
+      assert {:ok, %Assinante{nome: "Guto"}} = Assinante.cadastrar("Guto", "123", "123", :prepago)
     end
 
     test "erro ao criar usuário já existente" do
       Assinante.cadastrar("Guto", "123", "123", :prepago)
-      assert Assinante.cadastrar("Guto", "123", "123", :prepago) == {:error, "Assinante com este numero já cadastrado"}
+
+      assert Assinante.cadastrar("Guto", "123", "123", :prepago) ==
+               {:error, "Assinante com este numero já cadastrado"}
     end
   end
 
