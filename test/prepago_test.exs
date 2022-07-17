@@ -28,4 +28,23 @@ defmodule PrepagoTest do
                {:error, "Voce não tem credito para fazer a ligacao, faça uma recarga"}
     end
   end
+
+  describe "testes para impressao de contas" do
+    test "deve informar os valroes da conta do mes" do
+      data = DateTime.utc_now()
+      data_antiga = ~U[2022-06-17 21:05:34.403979Z]
+
+      Assinante.cadastrar("Guto", "123", "123", :prepago)
+      Recarga.nova(data_antiga, 10, "123")
+      Prepago.fazer_chamada("123", data_antiga, 3)
+      Recarga.nova(data, 10, "123")
+      Prepago.fazer_chamada("123", data, 3)
+
+      assinante = Prepago.imprimir_conta(data.year, data.month, "123")
+
+      assert assinante.numero == "123"
+      assert Enum.count(assinante.chamadas) == 1
+      assert Enum.count(assinante.plano.recargas) == 1
+    end
+  end
 end

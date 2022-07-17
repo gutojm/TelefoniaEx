@@ -21,4 +21,8 @@ defmodule Prepago do
         {:error, "Voce não tem credito para fazer a ligacao, faça uma recarga"}
     end
   end
+
+  def imprimir_conta(ano, mes, numero) do
+    Contas.imprimir(ano, mes, numero, :prepago)
+  end
 end
